@@ -24,7 +24,11 @@
 #include <string>
 #include <iostream>
 #include <zmq.hpp>
-#include "opencv2/opencv.hpp"
+#include <pcl/visualization/cloud_viewer.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/common/common.h>
+#include <pcl/common/time.h>
 
 // configuration parameters
 #define NUM_COMNMAND_LINE_ARGUMENTS 1
@@ -41,6 +45,9 @@ int main(int argc, char **argv)
 {
     // store display parameters
     bool showFrames = false;
+    
+    // create the cloud viewer object
+    pcl::visualization::CloudViewer m_viewer (DISPLAY_WINDOW_NAME);
 
     // validate and parse the command line arguments
     if(argc != NUM_COMNMAND_LINE_ARGUMENTS + 1)
@@ -60,7 +67,7 @@ int main(int argc, char **argv)
 
     // connect to the image server
     std::cout << "Connecting to server..." << std::endl;
-    socket.connect ("tcp://129.107.132.24:5555");
+    socket.connect ("tcp://129.107.132.21:5555");
 
     // create a request object
     zmq::message_t request(5);
@@ -77,20 +84,30 @@ int main(int argc, char **argv)
         // get the reply
         zmq::message_t reply;
         socket.recv(&reply);
-        std::vector<uchar> buffer;
+        //std::vector<uchar> buffer;
         std::cout << "Received reply: " << reply.size() << " bytes" << std::endl;
 
         // store the reply data into an image structure
-        cv::Mat image(480, 640, CV_8UC3, reply.data());
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+        cloud->height = 480;
+        cloud->width = 640;
+        cloud->is_dense = false;
+        cloud->points.resize(640*480);
+        std::memcpy(cloud->points.data(), reply.data(), reply.size());
+        //std::cout << cloud->points[0] << std::endl;
+        //cv::Mat image(480, 640, CV_8UC3, reply.data());
+        
+        //cloud->points = reply.data();
 
         // display the result
         if(showFrames)
         {
-            cv::imshow(DISPLAY_WINDOW_NAME, image);
+            //cv::imshow(DISPLAY_WINDOW_NAME, image);
+            m_viewer.showCloud(cloud);
         }
 
         // check for program termination
-        if(cv::waitKey(1) == 'q')
+        if(m_viewer.wasStopped ())
         {
             requestFrames = false;
         }
@@ -98,6 +115,6 @@ int main(int argc, char **argv)
 
     // release program resources before returning
     socket.close();
-    cv::destroyAllWindows();
+    //cv::destroyAllWindows();
     return 0;
 }

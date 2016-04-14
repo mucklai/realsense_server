@@ -35,30 +35,16 @@ ELSE(WIN32)
     link_directories(${ZeroMQ_LIB_DIR})
 ENDIF(WIN32)
 
-# configure OpenCV
+# configure PCL
 IF(WIN32)
-    # set the opencv directories manually
-    message("Windows platform detected, setting OpenCV configuration manually...")
-    set(OPENCV_BUILD_DIR "C:/OpenCV/build/x64/vc12")
-    set(OPENCV_INCLUDE_DIRS "C:/OpenCV/build/include;C:/OpenCV/build/include/opencv;C:/OpenCV/build/include/opencv2")
-    set(OPENCV_LIB_DIRS "C:/OpenCV/build/x64/vc12/lib")
-
-    # find all of the subdirectories in OPENCV_LIB_DIRS to include
-    include_directories(${OPENCV_BUILD_DIR})
-    include_directories(${OPENCV_INCLUDE_DIRS})
-    link_directories(${OPENCV_LIB_DIRS})
-    
-    # find all of the libs in OPENCV_LIB_DIRS
-    file(GLOB OpenCV_LIBS RELATIVE ${OPENCV_LIB_DIRS} ${OPENCV_LIB_DIRS}/*2410.lib)
-    message("Found OpenCV libs...")
-    message(${OpenCV_LIBS})
+    message("Windows platform detected, try again with Linux!")
 ELSE(WIN32)
-    find_package (OpenCV REQUIRED)
+    find_package(PCL 1.8 REQUIRED COMPONENTS common visualization)
+
+    include_directories(${PCL_INCLUDE_DIRS})
+    link_directories(${PCL_LIBRARY_DIRS})
+    add_definitions(${PCL_DEFINITIONS})
 ENDIF(WIN32)
 
-# create individual projects
-#add_executable (zmq_cv_request zmq_cv_request.cpp)
-#target_link_libraries(zmq_cv_request ${ZeroMQ_LIBS} ${OpenCV_LIBS})
-
 add_executable (realsense_request realsense_request.cpp)
-target_link_libraries(realsense_request ${ZeroMQ_LIBS} ${OpenCV_LIBS})
+target_link_libraries(realsense_request ${ZeroMQ_LIBS} ${PCL_LIBRARIES})
