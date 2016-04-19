@@ -1,3 +1,6 @@
 #Bin folders
 server/bin
 request/bin
+
+#Temp files
+**/*~
