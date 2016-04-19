@@ -1,5 +1,5 @@
 //
-//    Copyright 2014 Christopher D. McMurrough
+//    Copyright 2014 Team WALL-E
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 /*******************************************************************************************************************//**
 * @file realsense_request.cpp
 * @brief C++ example for receiving realsense image frames via a zmq request / response scheme.
-* @author Christopher D. McMurrough
+* @author Team WALL-E & Christopher D. McMurrough
 ***********************************************************************************************************************/
 
 #include <string>
@@ -63,27 +63,25 @@ int main(int argc, char **argv)
 
     // initialize the zmq context and socket
     zmq::context_t context(1);
-    zmq::socket_t socket(context, ZMQ_REQ);
-
+    zmq::socket_t subscriber(context, ZMQ_SUB);
+    
     // connect to the image server
     std::cout << "Connecting to server..." << std::endl;
-    socket.connect ("tcp://129.107.132.21:5555");
+    
+    subscriber.connect ("tcp://129.107.132.24:5555");
+    subscriber.setsockopt(ZMQ_SUBSCRIBE, "", 0);
 
     // create a request object
     zmq::message_t request(5);
     memcpy(request.data(), "Hello", 5);
 
-    // request new frames until the user presses the 'q' key
-    bool requestFrames = true;
-    while(requestFrames)
+    // get new frames until the user presses the 'q' key
+    bool getFrames = true;
+    while(getFrames)
     {
-        // send the request
-        std::cout << "Sending request..." << std::endl;
-        socket.send(request);
-
         // get the reply
         zmq::message_t reply;
-        socket.recv(&reply);
+        subscriber.recv(&reply);
         //std::vector<uchar> buffer;
         std::cout << "Received reply: " << reply.size() << " bytes" << std::endl;
 
@@ -109,12 +107,11 @@ int main(int argc, char **argv)
         // check for program termination
         if(m_viewer.wasStopped ())
         {
-            requestFrames = false;
+            getFrames = false;
         }
     }
 
-    // release program resources before returning
-    socket.close();
-    //cv::destroyAllWindows();
+    // close the subscriber
+    subscriber.close();
     return 0;
 }

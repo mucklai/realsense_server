@@ -1,5 +1,5 @@
 //
-//    Copyright 2014 Christopher D. McMurrough
+//    Copyright 2014 Team WALL-E
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 /*******************************************************************************************************************//**
 * @file realsense_server.cpp
 * @brief C++ example for acquiring and transmitting realsense image frames via a zmq request / response scheme.
-* @author Christopher D. McMurrough
+* @author Team WALL-E & Christopher D. McMurrough
 ***********************************************************************************************************************/
 
 // include necessary dependencies
@@ -66,8 +66,8 @@ int main(int argc, char **argv)
     
     // initialize the zmq context and socket
     zmq::context_t context(1);
-    zmq::socket_t socket(context, ZMQ_REP);
-    socket.bind("tcp://*:5555");
+    zmq::socket_t publisher(context, ZMQ_PUB);
+    publisher.bind("tcp://*:5555");
     
     // create the realsense context
     rs::context ctx;
@@ -194,35 +194,9 @@ int main(int argc, char **argv)
             std::printf("WARNING: ZMQ error (%d) while creating message... \n", zmq_errno());
         }
 
-        // attempt to receive a message from the socket without blocking
-        int requestSize = zmq_recv((void*) socket, &msg, 0, ZMQ_NOBLOCK);
-        if(requestSize < 0)
-        {
-            // ignore error if no message was available
-            if(zmq_errno() != EAGAIN)
-            {
-                std::printf("WARNING: ZMQ error (%d) while receiving message... \n", zmq_errno());
-            }
-        }
-        else
-        {
-            // parse the request message
-            std::printf("Received request... \n");
-
-            // send response message if we have a successful capture
-            //if(captureSuccess)
-            {
-                //size_t frameSize = captureFrame.step[0] * captureFrame.rows;
-                size_t frameSize = sizeof(cloud->points) + cloud->points.size() * sizeof(pcl::PointXYZRGB);
-                std::cout << "Sending frame reply: " << frameSize << " bytes" << std::endl;                
-                //zmq_send((void*) socket, captureFrame.data, frameSize, 0);
-                zmq_send((void*) socket, cloud->points.data(), frameSize, 0);
-                //std::cout << cloud->points[0] << std::endl;
-            }
-        }
-
-        // release the request message
-        zmq_msg_close(&msg);
+        size_t frameSize = sizeof(cloud->points) + cloud->points.size() * sizeof(pcl::PointXYZRGB);
+        std::cout << "Sending frame: " << frameSize << " bytes" << std::endl;                
+        zmq_send((void*) publisher, cloud->points.data(), frameSize, 0);
     }
     
     return EXIT_SUCCESS;
