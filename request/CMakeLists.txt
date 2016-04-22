@@ -35,16 +35,22 @@ ELSE(WIN32)
     link_directories(${ZeroMQ_LIB_DIR})
 ENDIF(WIN32)
 
-# configure PCL
+# configure PCL && ncurses
 IF(WIN32)
     message("Windows platform detected, try again with Linux!")
 ELSE(WIN32)
+    # PCL
     find_package(PCL 1.8 REQUIRED COMPONENTS common visualization)
 
     include_directories(${PCL_INCLUDE_DIRS})
     link_directories(${PCL_LIBRARY_DIRS})
     add_definitions(${PCL_DEFINITIONS})
+    
+    #ncurses
+    find_package(Curses REQUIRED)
+    
+    include_directories(${CURSES_INCLUDE_DIR})
 ENDIF(WIN32)
 
 add_executable (realsense_request realsense_request.cpp)
-target_link_libraries(realsense_request ${ZeroMQ_LIBS} ${PCL_LIBRARIES})
+target_link_libraries(realsense_request ${ZeroMQ_LIBS} ${PCL_LIBRARIES} ${CURSES_LIBRARIES})

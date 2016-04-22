@@ -29,6 +29,7 @@
 #include <pcl/point_types.h>
 #include <pcl/common/common.h>
 #include <pcl/common/time.h>
+#include <ncurses.h>
 
 // configuration parameters
 #define NUM_COMNMAND_LINE_ARGUMENTS 1
@@ -43,6 +44,12 @@
 ***********************************************************************************************************************/
 int main(int argc, char **argv)
 {
+    // character capturing intialization
+    initscr();
+    int ch;
+    nodelay(stdscr, TRUE);
+    noecho();
+    
     // store display parameters
     bool showFrames = false;
     
@@ -52,8 +59,8 @@ int main(int argc, char **argv)
     // validate and parse the command line arguments
     if(argc != NUM_COMNMAND_LINE_ARGUMENTS + 1)
     {
-        std::printf("USAGE: %s <display_mode> \n", argv[0]);
-        std::printf("WARNING: Proceeding with default execution parameters... \n");
+        printw("USAGE: %s <display_mode> \n", argv[0]);
+        printw("WARNING: Proceeding with default execution parameters... \n");
         showFrames = true;
     }
     else
@@ -66,48 +73,72 @@ int main(int argc, char **argv)
     zmq::socket_t subscriber(context, ZMQ_SUB);
     
     // connect to the image server
-    std::cout << "Connecting to server..." << std::endl;
+    printw("Connecting to server...\n");
     
-    subscriber.connect ("tcp://129.107.132.24:5555");
-    subscriber.setsockopt(ZMQ_SUBSCRIBE, "", 0);
+    subscriber.connect ("tcp://129.107.132.27:5555");
+    
+    printw("Press S to stream images and C to capture one image...\n");
+    
 
     // create a request object
-    zmq::message_t request(5);
-    memcpy(request.data(), "Hello", 5);
+    //zmq::message_t request(5);
+    //memcpy(request.data(), "Hello", 5);
 
     // get new frames until the user presses the 'q' key
-    bool getFrames = true;
-    while(getFrames)
+    bool running = true;
+    bool stream = false;
+    bool capture = false;
+    while(running)
     {
-        // get the reply
-        zmq::message_t reply;
-        subscriber.recv(&reply);
-        //std::vector<uchar> buffer;
-        std::cout << "Received reply: " << reply.size() << " bytes" << std::endl;
-
-        // store the reply data into an image structure
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
-        cloud->height = 480;
-        cloud->width = 640;
-        cloud->is_dense = false;
-        cloud->points.resize(640*480);
-        std::memcpy(cloud->points.data(), reply.data(), reply.size());
-        //std::cout << cloud->points[0] << std::endl;
-        //cv::Mat image(480, 640, CV_8UC3, reply.data());
-        
-        //cloud->points = reply.data();
-
-        // display the result
-        if(showFrames)
-        {
-            //cv::imshow(DISPLAY_WINDOW_NAME, image);
-            m_viewer.showCloud(cloud);
+        if ((ch = getch()) == int('s')) { // if presses "stream" button
+            if (stream) { // if we were already streaming
+                subscriber.setsockopt(ZMQ_UNSUBSCRIBE, "", 0); // UNSUBSCRIBE
+                printw("S pressed: Stopping stream.\n");             
+            } else { // else
+                subscriber.setsockopt(ZMQ_SUBSCRIBE, "", 0); //SUBSCRIBE
+                printw("S pressed: Starting stream.\n"); 
+            }
+            stream = !(stream); // toggle stream
+        } else if (ch == int('c')) { // else if presses "capture" button
+            subscriber.setsockopt(ZMQ_SUBSCRIBE, "", 0);
+            capture = true;
+            printw("C pressed: Capturing image.\n"); 
         }
+        
+        if (stream || capture) {
+            //check for subscription
+            // get the reply
+            zmq::message_t reply;
+            subscriber.recv(&reply);
+            //std::vector<uchar> buffer;
+            std::cout << "Received reply: " << reply.size() << " bytes" << std::endl;
+
+            // store the reply data into an image structure
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+            cloud->height = 480;
+            cloud->width = 640;
+            cloud->is_dense = false;
+            cloud->points.resize(640*480);
+            std::memcpy(cloud->points.data(), reply.data(), reply.size());
+            //std::cout << cloud->points[0] << std::endl;
+            //cv::Mat image(480, 640, CV_8UC3, reply.data());
+            
+            //cloud->points = reply.data();
+
+            // display the result
+            if(showFrames) {
+                m_viewer.showCloud(cloud);
+            }
+            
+            if (capture) { // we've received one image and can stop
+                subscriber.setsockopt(ZMQ_SUBSCRIBE, "", 0);
+                capture = false;
+            }
+        } 
 
         // check for program termination
-        if(m_viewer.wasStopped ())
-        {
-            getFrames = false;
+        if(m_viewer.wasStopped ()) {
+            running = false;
         }
     }
 
