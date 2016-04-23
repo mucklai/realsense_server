@@ -131,7 +131,7 @@ int main(int argc, char **argv)
             }
             
             if (capture) { // we've received one image and can stop
-                subscriber.setsockopt(ZMQ_SUBSCRIBE, "", 0);
+                subscriber.setsockopt(ZMQ_UNSUBSCRIBE, "", 0);
                 capture = false;
             }
         } 
