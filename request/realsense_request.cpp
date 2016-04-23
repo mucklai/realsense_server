@@ -111,7 +111,7 @@ int main(int argc, char **argv)
             zmq::message_t reply;
             subscriber.recv(&reply);
             //std::vector<uchar> buffer;
-            std::cout << "Received reply: " << reply.size() << " bytes" << std::endl;
+            printw("Received reply: %d bytes.\n", reply.size());
 
             // store the reply data into an image structure
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
