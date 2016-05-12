@@ -40,7 +40,7 @@
 * @param[in] argc number of command line arguments
 * @param[in] argv string array of command line arguments
 * @return return code (0 for normal termination)
-* @author Christoper D. McMurrough
+* @author Team WALL-E & Christoper D. McMurrough
 ***********************************************************************************************************************/
 int main(int argc, char **argv)
 {
@@ -59,8 +59,6 @@ int main(int argc, char **argv)
     // validate and parse the command line arguments
     if(argc != NUM_COMNMAND_LINE_ARGUMENTS + 1)
     {
-        //printw("USAGE: %s <display_mode> \n", argv[0]);
-        //printw("WARNING: Proceeding with default execution parameters... \n");
         showFrames = true;
     }
     else
