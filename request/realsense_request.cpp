@@ -59,8 +59,8 @@ int main(int argc, char **argv)
     // validate and parse the command line arguments
     if(argc != NUM_COMNMAND_LINE_ARGUMENTS + 1)
     {
-        printw("USAGE: %s <display_mode> \n", argv[0]);
-        printw("WARNING: Proceeding with default execution parameters... \n");
+        //printw("USAGE: %s <display_mode> \n", argv[0]);
+        //printw("WARNING: Proceeding with default execution parameters... \n");
         showFrames = true;
     }
     else
@@ -72,46 +72,44 @@ int main(int argc, char **argv)
     zmq::context_t context(1);
     zmq::socket_t subscriber(context, ZMQ_SUB);
     
-    // connect to the image server
-    printw("Connecting to server...\n");
-    
-    subscriber.connect ("tcp://129.107.132.27:5555");
+    subscriber.connect ("tcp://192.168.1.106:5555");
     
     printw("Press S to stream images and C to capture one image...\n");
-    
+    refresh();
 
-    // create a request object
-    //zmq::message_t request(5);
-    //memcpy(request.data(), "Hello", 5);
-
-    // get new frames until the user presses the 'q' key
+    // get new frames until the user quits
     bool running = true;
     bool stream = false;
     bool capture = false;
     while(running)
     {
         if ((ch = getch()) == int('s')) { // if presses "stream" button
+            clear();
             if (stream) { // if we were already streaming
                 subscriber.setsockopt(ZMQ_UNSUBSCRIBE, "", 0); // UNSUBSCRIBE
-                printw("S pressed: Stopping stream.\n");             
+                printw("S pressed: Stopping stream. Press S to stop.\n");
+                refresh();          
             } else { // else
                 subscriber.setsockopt(ZMQ_SUBSCRIBE, "", 0); //SUBSCRIBE
-                printw("S pressed: Starting stream.\n"); 
+                printw("S pressed: Starting stream. Press S to start or C to capture.\n");
+                refresh();   
             }
             stream = !(stream); // toggle stream
         } else if (ch == int('c')) { // else if presses "capture" button
-            subscriber.setsockopt(ZMQ_SUBSCRIBE, "", 0);
+            if (stream == false) { // if we're not streaming, subscribe
+                subscriber.setsockopt(ZMQ_SUBSCRIBE, "", 0); //SUBSCRIBE
+            }
             capture = true;
-            printw("C pressed: Capturing image.\n"); 
+            stream = false;
+            clear();
+            printw("C pressed: Capturing image. Press C to capture again or S to stream.\n");
+            refresh();
         }
         
         if (stream || capture) {
-            //check for subscription
             // get the reply
             zmq::message_t reply;
             subscriber.recv(&reply);
-            //std::vector<uchar> buffer;
-            printw("Received reply: %d bytes.\n", reply.size());
 
             // store the reply data into an image structure
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -120,10 +118,6 @@ int main(int argc, char **argv)
             cloud->is_dense = false;
             cloud->points.resize(640*480);
             std::memcpy(cloud->points.data(), reply.data(), reply.size());
-            //std::cout << cloud->points[0] << std::endl;
-            //cv::Mat image(480, 640, CV_8UC3, reply.data());
-            
-            //cloud->points = reply.data();
 
             // display the result
             if(showFrames) {
@@ -131,7 +125,7 @@ int main(int argc, char **argv)
             }
             
             if (capture) { // we've received one image and can stop
-                subscriber.setsockopt(ZMQ_UNSUBSCRIBE, "", 0);
+                subscriber.setsockopt(ZMQ_UNSUBSCRIBE, "", 0); // UNSUBSCRIBE
                 capture = false;
             }
         } 
@@ -140,6 +134,10 @@ int main(int argc, char **argv)
         if(m_viewer.wasStopped ()) {
             running = false;
         }
+    }
+
+    if (stream || capture) {
+        subscriber.setsockopt(ZMQ_UNSUBSCRIBE, "", 0); // UNSUBSCRIBE
     }
 
     // close the subscriber
