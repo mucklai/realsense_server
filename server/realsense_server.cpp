@@ -81,12 +81,12 @@ int main(int argc, char **argv)
         std::printf("There are %d connected RealSense devices.\n", ctx.get_device_count());
     }
 	
-	rs::device * dev = ctx.get_device(0);
-	printf("\nUsing device 0, an %s\n", dev->get_name());
+    rs::device * dev = ctx.get_device(0);
+    printf("\nUsing device 0, an %s\n", dev->get_name());
     printf("    Serial number: %s\n", dev->get_serial());
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
-	// Configure all streams to run at VGA resolution at 60 frames per second
+    // Configure all streams to run at VGA resolution at 60 frames per second
     dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 60);
     dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60);
     dev->start();
@@ -119,16 +119,7 @@ int main(int argc, char **argv)
    
         // Initialize point cloud
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
-        //cloud->header.frame_id = "some_tf_frame";
-        //cloud->height = 480;
-        //cloud->width = 640;
-        //cloud->fields.resize(4);
-        //cloud->fields[0].name = "x";
-        //cloud->fields[1].name = "y";
-        //cloud->fields[2].name = "z";
-        //cloud->fields[3].name = "rgb";
         cloud->is_dense = false;
-        //cloud->points.resize(640*480);
         
         // We will render our depth data as a set of points in 3D space
         for(int dy=0; dy<depth_intrin.height; ++dy)
@@ -169,7 +160,6 @@ int main(int argc, char **argv)
                 point.z = -(depth_point.z);                                            
                 
                 cloud->points.push_back(point);
-                //cloud->points[(dy * depth_intrin.height) + dx] = point;
             }
         }
         
